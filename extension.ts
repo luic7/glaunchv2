@@ -11,10 +11,11 @@ export default class GlaunchV2 extends Extension {
 	private _settings: Gio.Settings | null = null;
 	private _launcher: Launcher | null = null;
 	private _signalHandlers: number[] = [];
+	private _settingsChangedId: number | null = null;
 
 	enable() {
-		this._config = new Config();
 		this._settings = this.getSettings();
+		this._config = new Config(this._settings);
 		this._launcher = new Launcher(this._config, this._settings);
 
 		this._signalHandlers.push(
@@ -27,6 +28,47 @@ export default class GlaunchV2 extends Extension {
 				this._launcher?.deleteApp(win.get_meta_window());
 			})
 		);
+
+		// Listen for settings changes to reload keybindings
+		this._settingsChangedId = this._settings.connect("changed::shortcuts", () => {
+			this._reloadShortcuts();
+		});
+	}
+
+	private _reloadShortcuts() {
+		if (!this._settings) return;
+
+		console.debug("[GlaunchV2] Settings changed, reloading shortcuts...");
+
+		// Unbind all current keybindings
+		this._config?.entries.forEach((bind) => {
+			if (bind.key) {
+				Main.wm.removeKeybinding(bind.key);
+			}
+		});
+
+		// Reload config and launcher
+		this._config = new Config(this._settings);
+		this._launcher = new Launcher(this._config, this._settings);
+
+		console.debug("[GlaunchV2] Shortcuts reloaded");
+
+		// Refocus the Extensions preferences window
+		this._focusExtensionsWindow();
+	}
+
+	private _focusExtensionsWindow() {
+		const windows = global.display.get_tab_list(Meta.TabList.NORMAL, null);
+		for (const win of windows) {
+			const wmClass = win.get_wm_class();
+			// Match GNOME Extensions app or extension-prefs window
+			if (wmClass && (wmClass.includes("Extensions") || wmClass.includes("extension-prefs"))) {
+				win.raise_and_make_recent_on_workspace(win.get_workspace());
+				win.focus(global.get_current_time());
+				console.debug("[GlaunchV2] Refocused Extensions window");
+				return;
+			}
+		}
 	}
 
 	disable() {
@@ -34,6 +76,12 @@ export default class GlaunchV2 extends Extension {
 			global.window_manager.disconnect(id);
 		});
 		this._signalHandlers = [];
+
+		// Disconnect settings change handler
+		if (this._settingsChangedId !== null && this._settings) {
+			this._settings.disconnect(this._settingsChangedId);
+			this._settingsChangedId = null;
+		}
 
 		this._config?.entries.forEach((bind, _) => {
 			if (bind.key) {
