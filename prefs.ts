@@ -21,6 +21,8 @@ const FUNCTION_KEYS = [
 	"F7", "F8", "F9", "F10", "F11", "F12"
 ];
 
+const FUNCTION_KEYS_WITH_NONE = ["None", ...FUNCTION_KEYS];
+
 export default class GlaunchV2Preferences extends ExtensionPreferences {
 	private _settings: Gio.Settings | null = null;
 
@@ -62,9 +64,98 @@ export default class GlaunchV2Preferences extends ExtensionPreferences {
 
 		group.add(addRow);
 
+		// Window Management group
+		const wmGroup = new Adw.PreferencesGroup({
+			title: "Window Management",
+			description: "Configure window management shortcuts",
+		});
+
+		// Previous window key
+		const prevWindowRow = new Adw.ComboRow({
+			title: "Previous Window",
+			subtitle: "Switch to previously focused window",
+		});
+		const prevKeyModel = new Gtk.StringList();
+		for (const key of FUNCTION_KEYS_WITH_NONE) {
+			prevKeyModel.append(key);
+		}
+		prevWindowRow.set_model(prevKeyModel);
+		this._setComboFromSetting(prevWindowRow, "win-prev-key");
+		prevWindowRow.connect("notify::selected", () => {
+			this._saveKeyFromCombo(prevWindowRow, "win-prev-key");
+		});
+		wmGroup.add(prevWindowRow);
+
+		// Cycle other windows key
+		const otherWindowRow = new Adw.ComboRow({
+			title: "Cycle Other Windows",
+			subtitle: "Cycle through non-configured windows",
+		});
+		const otherKeyModel = new Gtk.StringList();
+		for (const key of FUNCTION_KEYS_WITH_NONE) {
+			otherKeyModel.append(key);
+		}
+		otherWindowRow.set_model(otherKeyModel);
+		this._setComboFromSetting(otherWindowRow, "win-other-key");
+		otherWindowRow.connect("notify::selected", () => {
+			this._saveKeyFromCombo(otherWindowRow, "win-other-key");
+		});
+		wmGroup.add(otherWindowRow);
+
+		// Close window key
+		const deleteWindowRow = new Adw.ComboRow({
+			title: "Close Window",
+			subtitle: "Close the currently focused window",
+		});
+		const deleteKeyModel = new Gtk.StringList();
+		for (const key of FUNCTION_KEYS_WITH_NONE) {
+			deleteKeyModel.append(key);
+		}
+		deleteWindowRow.set_model(deleteKeyModel);
+		this._setComboFromSetting(deleteWindowRow, "win-delete-key");
+		deleteWindowRow.connect("notify::selected", () => {
+			this._saveKeyFromCombo(deleteWindowRow, "win-delete-key");
+		});
+		wmGroup.add(deleteWindowRow);
+
+		// Center mouse toggle
+		const centerMouseRow = new Adw.SwitchRow({
+			title: "Center Mouse on Focus",
+			subtitle: "Move mouse cursor to center of focused window",
+		});
+		centerMouseRow.set_active(this._settings?.get_boolean("win-center-mouse") ?? true);
+		centerMouseRow.connect("notify::active", () => {
+			this._settings?.set_boolean("win-center-mouse", centerMouseRow.get_active());
+		});
+		wmGroup.add(centerMouseRow);
+
+		page.add(wmGroup);
+
 		window.add(page);
 
 		return Promise.resolve();
+	}
+
+	private _setComboFromSetting(comboRow: Adw.ComboRow, settingKey: string): void {
+		const value = this._settings?.get_string(settingKey) ?? "";
+		if (!value) {
+			comboRow.set_selected(0); // None
+		} else {
+			const index = FUNCTION_KEYS_WITH_NONE.findIndex(
+				(k) => k.toLowerCase() === value.toLowerCase()
+			);
+			comboRow.set_selected(index >= 0 ? index : 0);
+		}
+	}
+
+	private _saveKeyFromCombo(comboRow: Adw.ComboRow, settingKey: string): void {
+		const selected = comboRow.get_selected();
+		if (selected === 0) {
+			// None selected
+			this._settings?.set_string(settingKey, "");
+		} else {
+			this._settings?.set_string(settingKey, FUNCTION_KEYS_WITH_NONE[selected].toLowerCase());
+		}
 	}
 
 	private _loadShortcuts(group: Adw.PreferencesGroup): void {

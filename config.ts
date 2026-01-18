@@ -40,12 +40,26 @@ export default class Config {
 			}
 		}
 
-		// Add default window management keybindings
-		// These can be made configurable in the settings UI later
-		config.push({ act: "win_prev", key: "f4" });
-		config.push({ act: "win_other", key: "f12" });
-		config.push({ act: "win_delete", key: "f3" });
-		config.push({ act: "win_center_mouse" });
+		// Add window management keybindings from settings
+		const winPrevKey = settings.get_string("win-prev-key") ?? "";
+		if (winPrevKey) {
+			config.push({ act: "win_prev", key: winPrevKey.toLowerCase() });
+		}
+
+		const winOtherKey = settings.get_string("win-other-key") ?? "";
+		if (winOtherKey) {
+			config.push({ act: "win_other", key: winOtherKey.toLowerCase() });
+		}
+
+		const winDeleteKey = settings.get_string("win-delete-key") ?? "";
+		if (winDeleteKey) {
+			config.push({ act: "win_delete", key: winDeleteKey.toLowerCase() });
+		}
+
+		const winCenterMouse = settings.get_boolean("win-center-mouse");
+		if (winCenterMouse) {
+			config.push({ act: "win_center_mouse" });
+		}
 
 		return config;
 	}

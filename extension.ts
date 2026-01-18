@@ -12,7 +12,7 @@ export default class GlaunchV2 extends Extension {
 	private _launcher: Launcher | null = null;
 	private _signalHandlers: number[] = [];
 	private _displaySignalHandlers: number[] = [];
-	private _settingsChangedId: number | null = null;
+	private _settingsChangedIds: number[] = [];
 
 	enable() {
 		this._settings = this.getSettings();
@@ -37,9 +37,31 @@ export default class GlaunchV2 extends Extension {
 		);
 
 		// Listen for settings changes to reload keybindings
-		this._settingsChangedId = this._settings.connect("changed::shortcuts", () => {
-			this._reloadShortcuts();
-		});
+		this._settingsChangedIds.push(
+			this._settings.connect("changed::shortcuts", () => {
+				this._reloadShortcuts();
+			})
+		);
+		this._settingsChangedIds.push(
+			this._settings.connect("changed::win-prev-key", () => {
+				this._reloadShortcuts();
+			})
+		);
+		this._settingsChangedIds.push(
+			this._settings.connect("changed::win-other-key", () => {
+				this._reloadShortcuts();
+			})
+		);
+		this._settingsChangedIds.push(
+			this._settings.connect("changed::win-delete-key", () => {
+				this._reloadShortcuts();
+			})
+		);
+		this._settingsChangedIds.push(
+			this._settings.connect("changed::win-center-mouse", () => {
+				this._reloadShortcuts();
+			})
+		);
 	}
 
 	private _reloadShortcuts() {
@@ -89,11 +111,11 @@ export default class GlaunchV2 extends Extension {
 		});
 		this._displaySignalHandlers = [];
 
-		// Disconnect settings change handler
-		if (this._settingsChangedId !== null && this._settings) {
-			this._settings.disconnect(this._settingsChangedId);
-			this._settingsChangedId = null;
-		}
+		// Disconnect settings change handlers
+		this._settingsChangedIds.forEach(id => {
+			this._settings?.disconnect(id);
+		});
+		this._settingsChangedIds = [];
 
 		this._config?.entries.forEach((bind, _) => {
 			if (bind.key) {

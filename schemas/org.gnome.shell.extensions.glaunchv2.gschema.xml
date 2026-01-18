@@ -9,6 +9,28 @@
       <description>JSON array of shortcut configurations with app and key bindings</description>
     </key>
 
+    <!-- Window management settings -->
+    <key name="win-prev-key" type="s">
+      <default>'f4'</default>
+      <summary>Previous window key</summary>
+      <description>Function key for switching to previous window. Empty to disable.</description>
+    </key>
+    <key name="win-other-key" type="s">
+      <default>'f12'</default>
+      <summary>Cycle other windows key</summary>
+      <description>Function key for cycling non-configured windows. Empty to disable.</description>
+    </key>
+    <key name="win-delete-key" type="s">
+      <default>'f3'</default>
+      <summary>Close window key</summary>
+      <description>Function key for closing current window. Empty to disable.</description>
+    </key>
+    <key name="win-center-mouse" type="b">
+      <default>true</default>
+      <summary>Center mouse on focus</summary>
+      <description>Whether to center the mouse cursor when focusing a window</description>
+    </key>
+
     <!-- Function keys for keybinding registration -->
     <key name="f1" type="as">
       <default><![CDATA[['F1']]]></default>
