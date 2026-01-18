@@ -11,6 +11,7 @@ export default class GlaunchV2 extends Extension {
 	private _settings: Gio.Settings | null = null;
 	private _launcher: Launcher | null = null;
 	private _signalHandlers: number[] = [];
+	private _displaySignalHandlers: number[] = [];
 	private _settingsChangedId: number | null = null;
 
 	enable() {
@@ -26,6 +27,12 @@ export default class GlaunchV2 extends Extension {
 		this._signalHandlers.push(
 			global.window_manager.connect("destroy", (_, win: Meta.WindowActor) => {
 				this._launcher?.deleteApp(win.get_meta_window());
+			})
+		);
+
+		this._displaySignalHandlers.push(
+			global.display.connect("notify::focus-window", () => {
+				this._launcher?.promoteWindow(global.display.focus_window);
 			})
 		);
 
@@ -76,6 +83,11 @@ export default class GlaunchV2 extends Extension {
 			global.window_manager.disconnect(id);
 		});
 		this._signalHandlers = [];
+
+		this._displaySignalHandlers.forEach(id => {
+			global.display.disconnect(id);
+		});
+		this._displaySignalHandlers = [];
 
 		// Disconnect settings change handler
 		if (this._settingsChangedId !== null && this._settings) {
