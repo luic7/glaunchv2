@@ -2,7 +2,6 @@ import Adw from "gi://Adw";
 import Gtk from "gi://Gtk";
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
-import GObject from "gi://GObject";
 import { ExtensionPreferences } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
 
 interface ShortcutConfig {
@@ -132,6 +131,10 @@ export default class GlaunchPreferences extends ExtensionPreferences {
 		page.add(wmGroup);
 
 		window.add(page);
+
+		window.connect('close-request', () => {
+			this._settings = null;
+		});
 
 		return Promise.resolve();
 	}

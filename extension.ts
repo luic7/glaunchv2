@@ -67,18 +67,11 @@ export default class Glaunch extends Extension {
 	private _reloadShortcuts() {
 		if (!this._settings) return;
 
-		// Unbind all current keybindings
-		this._config?.entries.forEach((bind) => {
-			if (bind.key) {
-				Main.wm.removeKeybinding(bind.key);
-			}
-		});
+		this._launcher?.destroy();
 
-		// Reload config and launcher
 		this._config = new Config(this._settings);
 		this._launcher = new Launcher(this._config, this._settings);
 
-		// Refocus the Extensions preferences window
 		this._focusExtensionsWindow();
 	}
 
@@ -112,13 +105,8 @@ export default class Glaunch extends Extension {
 		});
 		this._settingsChangedIds = [];
 
-		this._config?.entries.forEach((bind, _) => {
-			if (bind.key) {
-				Main.wm.removeKeybinding(bind.key!)
-			}
-		});
+		this._launcher?.destroy();
 
-		this._settings?.run_dispose();
 		this._settings = null;
 		this._config = null;
 		this._launcher = null;
