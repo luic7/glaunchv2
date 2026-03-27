@@ -3,7 +3,6 @@ import Gio from "gi://Gio";
 import Meta from "gi://Meta";
 import Shell from "gi://Shell";
 
-
 import Config from "./config.js";
 import { App, AppCollection } from "./apps.js";
 
@@ -11,6 +10,7 @@ export default class Launcher {
 	private _apps: Map<string, AppCollection>;
 	private _settings: Gio.Settings;
 	private _boundedAppIds = new Set<string>();
+	private _boundedKeys = new Set<string>();
 	private _other = "other";
 	private _centerMouse = false;
 	private _windowTracker: Shell.WindowTracker;
@@ -74,7 +74,7 @@ export default class Launcher {
 			for (const boundId of this._boundedAppIds) {
 				const normalizedBoundId = this._normalizeAppName(boundId);
 				if (normalizedId.toLowerCase().includes(normalizedBoundId.toLowerCase().replace('.desktop', '')) ||
-				    normalizedBoundId.toLowerCase().includes(normalizedId.toLowerCase().replace('.desktop', ''))) {
+					normalizedBoundId.toLowerCase().includes(normalizedId.toLowerCase().replace('.desktop', ''))) {
 					return boundId;
 				}
 			}
@@ -88,7 +88,10 @@ export default class Launcher {
 
 	storeApp(win: Meta.Window | null) {
 		if (!win) return;
+		if (win.get_title() === 'wl-clipboard') return;
 		if (win.get_wm_class_instance() === 'gjs') return;
+		if (win.get_wm_class_instance() === 'ibus-ui-gtk3') return;
+		if (win.get_wm_class_instance() === 'gnome-control-center-global-shortcuts-provider') return;
 		if (win.get_window_type() !== Meta.WindowType.NORMAL) return;
 
 		try {
@@ -167,6 +170,13 @@ export default class Launcher {
 		global.display.focus_window?.delete(global.get_current_time());
 	}
 
+	destroy() {
+		for (const key of this._boundedKeys) {
+			Main.wm.removeKeybinding(key);
+		}
+		this._boundedKeys.clear();
+	}
+
 	private _bindKeys(config: Config) {
 		config.entries.forEach((bind) => {
 			switch (bind.act) {
@@ -178,6 +188,7 @@ export default class Launcher {
 						Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
 						() => this._handleApp(bind.app!)
 					);
+					this._boundedKeys.add(bind.key!);
 
 					// Store the normalized app ID in our bounded set
 					const appId = this._normalizeAppId(bind.app!);
@@ -194,6 +205,7 @@ export default class Launcher {
 						Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
 						() => this._handleApp(this._other)
 					);
+					this._boundedKeys.add(bind.key!);
 					break;
 
 				case "win_delete":
@@ -204,6 +216,7 @@ export default class Launcher {
 						Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
 						() => this._deleteWin()
 					);
+					this._boundedKeys.add(bind.key!);
 					break;
 
 				case "win_prev":
@@ -214,6 +227,7 @@ export default class Launcher {
 						Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
 						() => this._goToPrev()
 					);
+					this._boundedKeys.add(bind.key!);
 					break;
 
 				case "win_center_mouse":

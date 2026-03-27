@@ -16,18 +16,19 @@ dist/extension.js: node_modules
 schemas/gschemas.compiled: schemas/org.gnome.shell.extensions.$(NAME).gschema.xml
 	glib-compile-schemas schemas
 
-$(NAME).zip: dist/extension.js schemas/gschemas.compiled
+$(NAME).zip: dist/extension.js
 	@mkdir -p dist/schemas
-	@cp schemas/gschemas.compiled schemas/org.gnome.shell.extensions.$(NAME).gschema.xml dist/schemas/
+	@cp schemas/org.gnome.shell.extensions.$(NAME).gschema.xml dist/schemas/
 	@cp metadata.json dist/
 	@(cd dist && zip ../$(NAME).zip -9r .)
 
 pack: $(NAME).zip
 
-install: clean $(NAME).zip
+install: clean $(NAME).zip schemas/gschemas.compiled
 	@touch ~/.local/share/gnome-shell/extensions/$(NAME)@$(DOMAIN)
 	@rm -rf ~/.local/share/gnome-shell/extensions/$(NAME)@$(DOMAIN)
 	@mv dist ~/.local/share/gnome-shell/extensions/$(NAME)@$(DOMAIN)
+	@cp schemas/gschemas.compiled ~/.local/share/gnome-shell/extensions/$(NAME)@$(DOMAIN)/schemas/
 
 clean:
 	@rm -rf dist node_modules $(NAME).zip

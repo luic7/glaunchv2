@@ -72,6 +72,7 @@ export class AppCollection {
 		}
 
 		this._head = this._col[this._hIndex];
+		this._head?.focus(this._centerMouse)
 	}
 
 	size(): number {
